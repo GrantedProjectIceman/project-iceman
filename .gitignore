@@ -40,3 +40,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 backend/firebase-service-account.json
+
+
+# Python
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Secrets
+backend/firebase-service-account.json
+.env
+
+# Node
+node_modules/
