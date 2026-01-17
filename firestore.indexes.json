@@ -1,0 +1,47 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "grants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "agency",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "grant_profile.funding.cap_amount_sgd",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "grants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "grant_profile.issue_areas",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "agency",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "grants",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "grant_profile.scope_tags",
+          "arrayConfig": "CONTAINS"
+        },
+        {
+          "fieldPath": "grant_profile.funding.cap_amount_sgd",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
