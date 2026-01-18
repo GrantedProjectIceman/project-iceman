@@ -5,28 +5,28 @@ import Filters, { FilterState } from "../components/Filters";
 import BottomNav from "../components/BottomNav";
 import GrantListCard from "../components/GrantListCard";
 import { applyFilters } from "../lib/filterUtils";
-import { fetchGrants, type FirebaseGrant } from "../lib/api";
+import { fetchGrants, type FirebaseGrant, saveSwipe } from "../lib/api";
 import { Grant } from "../lib/types";
 
 function convertFirebaseToGrant(fbGrant: FirebaseGrant): Grant {
-  const profile = fbGrant.grant_profile || {} as any;
+  const profile = (fbGrant.grant_profile || {}) as any;
   const funding = profile.funding || {};
   const applicationWindow = profile.application_window || {};
-  
+
   return {
-    id: fbGrant.firestore_id || fbGrant.id || fbGrant.source_url?.split('/')[4] || 'unknown',
+    id: fbGrant.firestore_id || fbGrant.id || fbGrant.source_url || "unknown",
     title: fbGrant.title,
     organization: fbGrant.agency,
-    description: fbGrant.about || '',
+    description: fbGrant.about || "",
     issueAreas: profile.issue_areas || [],
-    scope: profile.scope_tags?.[0] || '',
+    scope: profile.scope_tags?.[0] || "",
     fundingMin: funding.min_amount_sgd || 0,
     fundingMax: funding.cap_amount_sgd || 0,
-    fundingRaw: funding.raw || fbGrant.funding || '',
-    deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || '2026-12-31',
+    fundingRaw: funding.raw || fbGrant.funding || "",
+    deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || "2026-12-31",
     eligibility: profile.eligibility?.requirements || [],
     kpis: [],
-    applicationUrl: fbGrant.source_url || '',
+    applicationUrl: fbGrant.source_url || "",
   };
 }
 
@@ -35,6 +35,8 @@ export default function BrowsePage() {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
 
   const [filters, setFilters] = useState<FilterState>({
     issueArea: [],
@@ -46,7 +48,9 @@ export default function BrowsePage() {
     eligibilityTypes: [],
   });
 
-  // Fetch grants from backend
+  const getKey = (g: Grant) => g.applicationUrl || g.id;
+
+  // Fetch grants
   useEffect(() => {
     async function loadGrants() {
       try {
@@ -56,14 +60,62 @@ export default function BrowsePage() {
         setGrants(converted);
         setError(null);
       } catch (err) {
-        console.error('Failed to load grants:', err);
-        setError('Failed to load grants. Please ensure the backend is running.');
+        console.error("Failed to load grants:", err);
+        setError("Failed to load grants. Please ensure the backend is running.");
       } finally {
         setLoading(false);
       }
     }
     loadGrants();
   }, []);
+
+  // Load saved keys from localStorage (optional but nice)
+  useEffect(() => {
+    const raw = localStorage.getItem("saved_grant_keys");
+    if (raw) setSavedKeys(new Set(JSON.parse(raw)));
+  }, []);
+
+  const persistSaved = (next: Set<string>) => {
+    localStorage.setItem("saved_grant_keys", JSON.stringify(Array.from(next)));
+  };
+
+  const toggleSave = async (grant: Grant) => {
+    const uid = localStorage.getItem("user_id");
+    if (!uid) {
+      alert("Please complete onboarding first.");
+      return;
+    }
+
+    const key = getKey(grant);
+    const alreadySaved = savedKeys.has(key);
+
+    // optimistic update
+    setSavedKeys((prev) => {
+      const next = new Set(prev);
+      if (alreadySaved) next.delete(key);
+      else next.add(key);
+      persistSaved(next);
+      return next;
+    });
+
+    try {
+      // If your backend treats "dislike" as remove from saved, this works.
+      // If not supported, tell me and I’ll adjust to a proper "unsave" endpoint.
+      const action = alreadySaved ? "dislike" : "like";
+      await saveSwipe(uid, key, action, grant.matchScore || 0);
+    } catch (e) {
+      console.error("Save failed:", e);
+
+      // rollback
+      setSavedKeys((prev) => {
+        const next = new Set(prev);
+        if (alreadySaved) next.add(key);
+        else next.delete(key);
+        persistSaved(next);
+        return next;
+      });
+    }
+  };
 
   const filteredGrants = applyFilters(grants, filters);
 
@@ -87,12 +139,23 @@ export default function BrowsePage() {
         ) : error ? (
           <div className="text-center mt-12">
             <p className="text-red-500 mb-2">{error}</p>
-            <p className="text-sm text-gray-500">Make sure the backend is running on http://localhost:8000</p>
+            <p className="text-sm text-gray-500">
+              Make sure the backend is running on http://localhost:8000
+            </p>
           </div>
         ) : filteredGrants.length > 0 ? (
-          filteredGrants.map((grant) => (
-            <GrantListCard key={grant.id} grant={grant} />
-          ))
+          filteredGrants.map((grant, idx) => {
+            const key = getKey(grant);
+            return (
+              <GrantListCard
+                key={`${key}__${idx}`}
+                grant={grant}
+                isSaved={savedKeys.has(key)}
+                onToggleSave={() => toggleSave(grant)}
+                showSaveButton={true}
+              />
+            );
+          })
         ) : (
           <p className="text-gray-500 text-center mt-12">
             No grants match your filters

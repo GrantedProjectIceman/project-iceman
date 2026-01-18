@@ -12,7 +12,8 @@ function convertFirebaseToGrant(fbGrant: FirebaseGrant): Grant {
   const applicationWindow = profile.application_window || {};
   
   return {
-    id: fbGrant.firestore_id || fbGrant.id || fbGrant.source_url?.split('/')[4] || 'unknown',
+    id: fbGrant.firestore_id || fbGrant.id || fbGrant.source_url || "unknown",
+
     title: fbGrant.title,
     organization: fbGrant.agency,
     description: fbGrant.about || '',
@@ -81,9 +82,13 @@ export default function SavedPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {grants.map((grant) => (
-              <GrantListCard key={grant.id} grant={grant} />
-            ))}
+            {grants.map((grant, idx) => (
+  <GrantListCard
+    key={`${grant.applicationUrl || "no_url"}__${grant.id}__${idx}`}
+    grant={grant}
+    showSaveButton={false}
+  />
+))}
           </div>
         )}
       </div>
