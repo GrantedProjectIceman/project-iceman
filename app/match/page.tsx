@@ -79,7 +79,7 @@ function SwipeableGrantCard({
 
       {/* Mobile hint */}
       <div className="mt-3 text-center text-xs text-gray-500">
-        Drag left/right to swipe
+        Drag left to skip, drag right to save!
       </div>
 
       {/* Expose programmatic swipe for buttons via window (simple hack-free approach) */}
@@ -90,10 +90,12 @@ function SwipeableGrantCard({
 
 export default function MatchPage() {
   const [grants, setGrants] = useState<Grant[]>([]);
-  const [saved, setSaved] = useState<Grant[]>([]);
+  const [savedCount, setSavedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+
+  const getKey = (g: Grant) => g.applicationUrl || g.id;
 
   useEffect(() => {
     async function loadMatchedGrants() {
@@ -107,13 +109,28 @@ export default function MatchPage() {
         }
         setUserId(storedUserId);
 
+        // Get already saved grants from backend
+        const { getSavedGrants } = await import("../lib/api");
+        const savedGrantsFromBackend = await getSavedGrants(storedUserId);
+        
+        // Build set of saved grant keys from backend data
+        const savedKeys = new Set<string>();
+        savedGrantsFromBackend.forEach((grant: any) => {
+          const key = grant.source_url || grant.firestore_id || grant.id;
+          if (key) savedKeys.add(key);
+        });
+        
+        // Sync localStorage with backend
+        localStorage.setItem("saved_grant_keys", JSON.stringify(Array.from(savedKeys)));
+        setSavedCount(savedKeys.size);
+
         const response = await fetch(
           `http://localhost:8000/api/match/recommendations/${storedUserId}?limit=50`
         );
         if (!response.ok) throw new Error("Failed to get recommendations");
         const data = await response.json();
 
-        const matchedGrants: Grant[] = (data.recommendations || []).map((match: any) => {
+        const allMatchedGrants: Grant[] = (data.recommendations || []).map((match: any) => {
           const grantData = match.grant_data || match;
           const profile = grantData.grant_profile || {};
           const funding = profile.funding || {};
@@ -141,7 +158,13 @@ export default function MatchPage() {
           };
         });
 
-        setGrants(matchedGrants);
+        // Filter out already saved grants
+        const unseenGrants = allMatchedGrants.filter(grant => {
+          const key = getKey(grant);
+          return !savedKeys.has(key);
+        });
+
+        setGrants(unseenGrants);
         setError(null);
       } catch (err) {
         console.error(err);
@@ -165,7 +188,15 @@ export default function MatchPage() {
         const grantId = current.applicationUrl || current.id || "";
         await saveSwipe(uid, grantId, action, current.matchScore || 0);
 
-        if (direction === "right") setSaved((prev) => [...prev, current]);
+        if (direction === "right") {
+          // Update shared localStorage
+          const key = getKey(current);
+          const savedKeysRaw = localStorage.getItem("saved_grant_keys");
+          const savedKeys = savedKeysRaw ? new Set(JSON.parse(savedKeysRaw)) : new Set();
+          savedKeys.add(key);
+          localStorage.setItem("saved_grant_keys", JSON.stringify(Array.from(savedKeys)));
+          setSavedCount(savedKeys.size);
+        }
       } catch (e) {
         console.error("Error saving swipe:", e);
       }
@@ -175,7 +206,6 @@ export default function MatchPage() {
   };
 
   const remaining = grants.length;
-  const savedCount = saved.length;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-indigo-50 via-blue-50 to-purple-50">
@@ -197,7 +227,7 @@ export default function MatchPage() {
         <div className="mb-6 flex items-start justify-between gap-4">
   <div>
     <div className="inline-flex items-center gap-2 rounded-full border border-white/60 bg-white/60 px-3 py-1 text-xs font-semibold text-indigo-700 shadow-sm backdrop-blur">
-      ✨ AI-matched for your NPO
+      AI-matched for your NPO
       <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
       Swipe to save
     </div>
@@ -248,7 +278,6 @@ export default function MatchPage() {
       rounded-2xl
       bg-gradient-to-br from-indigo-100/70 via-white/40 to-purple-100/70
       border border-indigo-200/60
-      shadow-[0_18px_60px_-30px_rgba(99,102,241,0.55)]
       backdrop-blur-sm
     "
   />
@@ -261,14 +290,13 @@ export default function MatchPage() {
       rounded-2xl
       bg-gradient-to-br from-purple-100/60 via-white/30 to-indigo-100/60
       border border-dashed border-purple-200/70
-      shadow-[0_18px_60px_-36px_rgba(168,85,247,0.45)]
       backdrop-blur-sm
     "
   />
 )}
 
           {/* Main card container */}
-          <div className="relative z-10 rounded-2xl border border-gray-200/70 bg-white/85 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.25)] ring-1 ring-black/5 backdrop-blur">
+          <div className="relative z-10 rounded-2xl border border-gray-200/70 bg-white/85 backdrop-blur">
           <div className="h-1.5 w-full rounded-t-2xl bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 opacity-70" />
 
             <div className="p-4 md:p-6">
@@ -303,15 +331,14 @@ export default function MatchPage() {
               )}
             </div>
 
-            {/* Action buttons (only when there’s a card) */}
+            {/* Action buttons (only when there's a card) */}
             {!loading && !error && grants.length > 0 && (
-              <div className="flex items-center justify-center gap-8 border-t border-gray-100 px-6 py-6">
+              <div className="flex items-center justify-center gap-8 border-t border-gray-100 px-6 py-3">
               <button
                 onClick={() => handleSwipe("left")}
                 className="
   group relative h-14 w-14 rounded-full
   bg-white/70 border border-white/70
-  shadow-[0_10px_30px_-14px_rgba(0,0,0,0.25)]
   backdrop-blur
   transition
   hover:scale-125 active:scale-95
@@ -323,29 +350,20 @@ export default function MatchPage() {
                 <span className="relative grid place-items-center text-2xl">
                   ✕
                 </span>
-                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[11px] font-semibold text-gray-500">
+                <span className="absolute -bottom-1 right-1 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold text-gray-500">
                   Skip
                 </span>
               </button>
             
               <button
                 onClick={() => handleSwipe("right")}
-                className="
-  group relative h-16 w-16 rounded-full
-  bg-gradient-to-br from-emerald-500 via-indigo-500 to-purple-500
-  text-white
-  shadow-[0_16px_60px_-18px_rgba(99,102,241,0.85)]
-  transition
-  hover:scale-125 active:scale-95
-"
-
+                className="group relative transition hover:scale-125 active:scale-95"
                 title="Save"
               >
-                <span className="absolute -inset-1 rounded-full bg-gradient-to-br from-emerald-400 to-indigo-400 blur-lg opacity-40 group-hover:opacity-70 transition" />
-                <span className="relative grid place-items-center text-2xl">
+                <span className="relative text-2xl">
                   ♥
                 </span>
-                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[11px] font-semibold text-gray-500">
+                <span className="absolute -bottom-4 -translate-x-1/2 whitespace-nowrap text-[11px] font-semibold text-gray-500">
                   Save
                 </span>
               </button>

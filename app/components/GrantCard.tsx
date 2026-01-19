@@ -42,7 +42,7 @@ export default function GrantCard({ grant, onSwipe }: GrantCardProps) {
 
   return (
     <div 
-      className="relative w-full h-[500px] cursor-grab active:cursor-grabbing"
+      className="relative w-full h-[calc(100vh-450px)] cursor-grab active:cursor-grabbing"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -63,17 +63,17 @@ export default function GrantCard({ grant, onSwipe }: GrantCardProps) {
         }}
       >
         {/* Front of card */}
-        <div className="absolute inset-0 backface-hidden bg-white rounded-2xl shadow-lg p-6 overflow-y-auto">
+        <div className="absolute inset-0 backface-hidden bg-white rounded-2xl p-6 overflow-y-auto">
           {/* Match Score Badge */}
           {grant.matchScore !== undefined && (
-            <div className="absolute top-4 right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full shadow-lg">
+            <div className="absolute top-10 right-4 z-10 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-4 py-2 rounded-full">
               <div className="text-xs font-semibold">MATCH</div>
               <div className="text-2xl font-bold">{Math.round(grant.matchScore)}%</div>
             </div>
           )}
           
           <div className="flex justify-between items-start mb-4">
-            <div className="flex-1 pr-20">
+            <div className="flex-1 pr-24">
               <h2 className="text-2xl font-bold text-gray-800 mb-2">{grant.title}</h2>
               <p className="text-sm text-gray-500 mt-1">{grant.organization}</p>
             </div>
@@ -82,7 +82,7 @@ export default function GrantCard({ grant, onSwipe }: GrantCardProps) {
                 e.stopPropagation();
                 setIsFlipped(!isFlipped);
               }}
-              className="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm hover:bg-indigo-200 transition-colors"
+              className="absolute top-2 right-4 z-20 px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm hover:bg-indigo-200 transition-colors"
             >
               {isFlipped ? 'Front' : 'Why Match?'}
             </button>
@@ -144,7 +144,7 @@ export default function GrantCard({ grant, onSwipe }: GrantCardProps) {
 
         {/* Back of card */}
         <div 
-          className="absolute inset-0 backface-hidden bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl shadow-2xl p-6 overflow-y-auto"
+          className="absolute inset-0 backface-hidden bg-gradient-to-br from-indigo-50 to-purple-50 rounded-2xl p-6 overflow-y-auto"
           style={{ transform: 'rotateY(180deg)' }}
         >
           <div className="flex justify-between items-start mb-4">

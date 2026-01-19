@@ -19,6 +19,7 @@ function convertFirebaseToGrant(fbGrant: FirebaseGrant): Grant {
     organization: fbGrant.agency,
     description: fbGrant.about || "",
     issueAreas: profile.issue_areas || [],
+    // scope_tags is an array, but we only use the first one for filtering
     scope: profile.scope_tags?.[0] || "",
     fundingMin: funding.min_amount_sgd || 0,
     fundingMax: funding.cap_amount_sgd || 0,
@@ -69,10 +70,35 @@ export default function BrowsePage() {
     loadGrants();
   }, []);
 
-  // Load saved keys from localStorage (optional but nice)
+  // Load saved keys from backend and sync with localStorage
   useEffect(() => {
-    const raw = localStorage.getItem("saved_grant_keys");
-    if (raw) setSavedKeys(new Set(JSON.parse(raw)));
+    async function loadSavedKeys() {
+      const uid = localStorage.getItem("user_id");
+      if (!uid) return;
+      
+      try {
+        const { getSavedGrants } = await import("../lib/api");
+        const savedGrantsFromBackend = await getSavedGrants(uid);
+        
+        // Build set of saved grant keys
+        const keys = new Set<string>();
+        savedGrantsFromBackend.forEach((grant: any) => {
+          const key = grant.source_url || grant.firestore_id || grant.id;
+          if (key) keys.add(key);
+        });
+        
+        // Update state and localStorage
+        setSavedKeys(keys);
+        localStorage.setItem("saved_grant_keys", JSON.stringify(Array.from(keys)));
+      } catch (error) {
+        console.error("Failed to load saved grants:", error);
+        // Fallback to localStorage if backend fails
+        const raw = localStorage.getItem("saved_grant_keys");
+        if (raw) setSavedKeys(new Set(JSON.parse(raw)));
+      }
+    }
+    
+    loadSavedKeys();
   }, []);
 
   const persistSaved = (next: Set<string>) => {

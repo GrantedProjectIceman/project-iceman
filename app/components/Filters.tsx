@@ -30,29 +30,25 @@ export default function Filters({
     if (!isOpen) return null;
 
     const issueAreaOptions = [
-        "Digital Skills/Tools",
-        "Education/Learning",
-        "Engagement Marketing",
-        "Environment",
-        "Health",
-        "Heritage",
-        "Social Cohesion",
-        "Social Service",
-        "Sport",
-        "Youth"
+        { value: "community", label: "Community" },
+        { value: "education", label: "Education" },
+        { value: "youth", label: "Youth" },
+        { value: "health", label: "Health" },
+        { value: "arts_culture", label: "Arts & Culture" },
+        { value: "ageing", label: "Ageing" },
+        { value: "employment", label: "Employment" },
+        { value: "sports", label: "Sports" },
+        { value: "digital_tech", label: "Digital Technology" },
+        { value: "disability_inclusion", label: "Disability & Inclusion" },
+        { value: "environment", label: "Environment" }
     ]
 
     const scopeOptions = [
-        "Apps/Social Media/Website",
-        "Classes/Seminar/Workshop",
-        "Construction",
-        "Dialogue/Conversation",
-        "Event/Exhibition/Performance",
-        "Fund-Raising",
-        "Music/Video",
-        "Publication",
-        "Research/Documentaton/Prototype",
-        "Visual Arts"
+        { value: "project_based", label: "Project / Programme" },
+        { value: "training_manpower", label: "Manpower & Training" },
+        { value: "research_evaluation", label: "Research & Evaluation" },
+        { value: "operations_support", label: "Operations Support" },
+        { value: "equipment_capex", label: "Equipment & CapEx" }
     ]
 
     const eligibilityOptions = [
@@ -138,17 +134,17 @@ export default function Filters({
               </h3>
               <p className="text-xs text-gray-500 mb-3">Select the focus areas relevant to your NPO</p>
               <div className="flex flex-wrap gap-2">
-                {issueAreaOptions.map((area: string) => (
+                {issueAreaOptions.map((area) => (
                   <button
-                    key={area}
-                    onClick={() => toggleItem(filters.issueArea, area, 'issueArea')}
+                    key={area.value}
+                    onClick={() => toggleItem(filters.issueArea, area.value, 'issueArea')}
                     className={`px-3 py-2 rounded-full text-sm transition-all ${
-                      filters.issueArea.includes(area)
+                      filters.issueArea.includes(area.value)
                         ? 'bg-indigo-600 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {area}
+                    {area.label}
                   </button>
                 ))}
               </div>
@@ -169,15 +165,15 @@ export default function Filters({
               <div className="flex flex-wrap gap-2">
                 {scopeOptions.map(scope => (
                   <button
-                    key={scope}
-                    onClick={() => toggleItem(filters.scopeOfGrant, scope, 'scopeOfGrant')}
+                    key={scope.value}
+                    onClick={() => toggleItem(filters.scopeOfGrant, scope.value, 'scopeOfGrant')}
                     className={`px-3 py-2 rounded-full text-sm transition-all ${
-                      filters.scopeOfGrant.includes(scope)
+                      filters.scopeOfGrant.includes(scope.value)
                         ? 'bg-purple-600 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
-                    {scope}
+                    {scope.label}
                   </button>
                 ))}
               </div>
@@ -391,34 +387,7 @@ export default function Filters({
               </div>
             </div>
 
-            {/* Eligibility Criteria */}
-            <div>
-              <h3 className="font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                <span className="text-lg">✓</span>
-                Eligibility Criteria
-              </h3>
-              <p className="text-xs text-gray-500 mb-3">Your organization type and status</p>
-              <div className="grid grid-cols-2 gap-2">
-                {eligibilityOptions.map(eligibility => (
-                  <button
-                    key={eligibility}
-                    onClick={() => toggleItem(filters.eligibilityTypes, eligibility, 'eligibilityTypes')}
-                    className={`px-3 py-2 rounded-lg text-sm text-left transition-all ${
-                      filters.eligibilityTypes.includes(eligibility)
-                        ? 'bg-teal-600 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {eligibility}
-                  </button>
-                ))}
-              </div>
-              {filters.eligibilityTypes.length > 0 && (
-                <p className="text-xs text-teal-600 mt-2 font-medium">
-                  {filters.eligibilityTypes.length} criteria selected
-                </p>
-              )}
-            </div>
+            {/* Note: Eligibility filter removed as grant data doesn't contain eligibility information */}
           </div>
 
           {/* Footer */}

@@ -34,7 +34,7 @@ export default function WelcomePage() {
               transition={{ duration: 0.55, ease: "easeOut" }}
             >
               <div className="inline-flex items-center gap-2 rounded-full border border-white/70 bg-white/60 px-3 py-1 text-xs font-semibold text-indigo-700 shadow-sm backdrop-blur">
-                ✨ Funding, simplified
+                Funding, simplified
                 <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
                 Swipe to decide
               </div>
@@ -72,7 +72,7 @@ export default function WelcomePage() {
               </div>
 
               <div className="mt-6 text-xs text-gray-500">
-                Tip: Your profile improves match accuracy.
+                Your profile improves match accuracy.
               </div>
             </motion.div>
           </div>

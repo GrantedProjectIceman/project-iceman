@@ -49,7 +49,18 @@ export default function SavedPage() {
 
         const savedGrants = await getSavedGrants(userId);
         const convertedGrants = savedGrants.map(convertFirebaseToGrant);
-        setGrants(convertedGrants);
+        
+        // Deduplicate grants by applicationUrl or id
+        const uniqueGrants = Array.from(
+          new Map(
+            convertedGrants.map(grant => [
+              grant.applicationUrl || grant.id,
+              grant
+            ])
+          ).values()
+        );
+        
+        setGrants(uniqueGrants);
       } catch (err) {
         console.error("Error loading saved grants:", err);
         setError("Failed to load saved grants. Make sure the backend is running.");
