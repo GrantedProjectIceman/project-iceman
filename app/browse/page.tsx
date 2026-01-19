@@ -24,7 +24,7 @@ function convertFirebaseToGrant(fbGrant: FirebaseGrant): Grant {
     fundingMin: funding.min_amount_sgd || 0,
     fundingMax: funding.cap_amount_sgd || 0,
     fundingRaw: funding.raw || fbGrant.funding || "",
-    deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || "2026-12-31",
+    deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || applicationWindow.raw || "No deadline specified",
     eligibility: profile.eligibility?.requirements || [],
     kpis: [],
     applicationUrl: fbGrant.source_url || "",
@@ -150,7 +150,7 @@ export default function BrowsePage() {
       </div>
 
       {/* List */}
-      <div className="flex-1 p-4 space-y-4">
+      <div className="flex-1 p-4 space-y-6">
         {loading ? (
           <p className="text-gray-500 text-center mt-12">Loading grants...</p>
         ) : error ? (
@@ -161,13 +161,14 @@ export default function BrowsePage() {
           filteredGrants.map((grant, idx) => {
             const key = getKey(grant);
             return (
-              <GrantListCard
-                key={`${key}__${idx}`}
-                grant={grant}
-                isSaved={savedKeys.has(key)}
-                onToggleSave={() => toggleSave(grant)}
-                showSaveButton={true}
-              />
+              <div key={`${key}__${idx}`} className="mb-4">
+                <GrantListCard
+                  grant={grant}
+                  isSaved={savedKeys.has(key)}
+                  onToggleSave={() => toggleSave(grant)}
+                  showSaveButton={true}
+                />
+              </div>
             );
           })
         ) : (

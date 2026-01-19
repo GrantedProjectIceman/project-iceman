@@ -149,7 +149,7 @@ export default function MatchPage() {
             fundingMin: funding.min_amount_sgd || 0,
             fundingMax: funding.cap_amount_sgd || 0,
             fundingRaw: funding.raw || grantData.funding || "",
-            deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || "No deadline",
+            deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || applicationWindow.raw || "No deadline specified",
             eligibility: profile.eligibility?.requirements || [],
             kpis: [],
             applicationUrl: grantData.source_url || "",
@@ -273,7 +273,7 @@ export default function MatchPage() {
 
 
         {/* Card area */}
-        <div className="relative">
+        <div className="relative mb-8">
           {/* Stack background cards (make them visually distinct) */}
 {remaining > 1 && (
   <div
