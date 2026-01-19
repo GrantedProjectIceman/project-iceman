@@ -1,4 +1,3 @@
-[Project Iceman README (1).md](https://github.com/user-attachments/files/24722656/Project.Iceman.README.1.md)
 ## **Granted**
 
 This document provides details about the frontend and backend implementation for our Granted project.
