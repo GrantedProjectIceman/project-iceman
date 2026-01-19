@@ -5,6 +5,10 @@ This document provides details about the frontend and backend implementation for
 - [Granted Frontend](#granted-frontend)
 - [Granted Backend](#granted-backend)
 
+## **Problem Statement:**
+
+How might non-profit organisations "pull" information about grants from OurSG grants portal that are relevant to them according to key criteria including issue area, scope of grant, KPls, funding quantum, application due date, etcs. so that they can strengthen their financial sustainability?
+
 ## **Project Overview:**
 
 **Granted** is an AI-powered grant discovery platform designed to help nonprofits efficiently identify, evaluate, and track relevant funding opportunities. By combining AI-driven match scoring with an intuitive swipe-based interface, Granted simplifies the grant search process, reduces cognitive load, and increases funding success rates. It is built using [**React.js**](http://NReact.js)**, Next.js**, **Firebase**, **Playwright, BeautifulSoup** and **Python**, leveraging on data processing pipelines for grant information, and a responsive front-end interface for interactive exploration. 
