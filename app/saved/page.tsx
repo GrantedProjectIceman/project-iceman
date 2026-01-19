@@ -81,13 +81,14 @@ export default function SavedPage() {
             <p className="text-sm text-gray-400 mt-2">Swipe right on grants you like in the Match tab!</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-8">
             {grants.map((grant, idx) => (
-  <GrantListCard
-    key={`${grant.applicationUrl || "no_url"}__${grant.id}__${idx}`}
-    grant={grant}
-    showSaveButton={false}
-  />
+  <div key={`${grant.applicationUrl || "no_url"}__${grant.id}__${idx}`} className="mb-8">
+    <GrantListCard
+      grant={grant}
+      showSaveButton={false}
+    />
+  </div>
 ))}
           </div>
         )}
