@@ -56,8 +56,34 @@ export default function BrowsePage() {
     async function loadGrants() {
       try {
         setLoading(true);
-        const firebaseGrants = await fetchGrants();
-        const converted = firebaseGrants.map(convertFirebaseToGrant);
+        
+        // Fetch from backend API instead of Firebase
+        const response = await fetch('http://localhost:8000/api/grants');
+        if (!response.ok) throw new Error('Failed to fetch grants');
+        
+        const data = await response.json();
+        const converted = (data || []).map((grantData: any) => {
+          const profile = grantData.grant_profile || {};
+          const funding = profile.funding || {};
+          const applicationWindow = profile.application_window || {};
+
+          return {
+            id: grantData.id || grantData.source_url || "unknown",
+            title: grantData.title,
+            organization: grantData.agency,
+            description: grantData.about || "",
+            issueAreas: profile.issue_areas || [],
+            scope: profile.scope_tags?.[0] || "",
+            fundingMin: funding.min_amount_sgd || 0,
+            fundingMax: funding.cap_amount_sgd || 0,
+            fundingRaw: funding.raw || grantData.funding || "",
+            deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || "2026-12-31",
+            eligibility: profile.eligibility?.requirements || [],
+            kpis: [],
+            applicationUrl: grantData.source_url || "",
+          };
+        });
+        
         setGrants(converted);
         setError(null);
       } catch (err) {
@@ -70,31 +96,21 @@ export default function BrowsePage() {
     loadGrants();
   }, []);
 
-  // Load saved keys from backend and sync with localStorage
+  // Load saved keys from localStorage
   useEffect(() => {
     async function loadSavedKeys() {
       const uid = localStorage.getItem("user_id");
       if (!uid) return;
       
       try {
-        const { getSavedGrants } = await import("../lib/api");
-        const savedGrantsFromBackend = await getSavedGrants(uid);
-        
-        // Build set of saved grant keys
-        const keys = new Set<string>();
-        savedGrantsFromBackend.forEach((grant: any) => {
-          const key = grant.source_url || grant.firestore_id || grant.id;
-          if (key) keys.add(key);
-        });
-        
-        // Update state and localStorage
-        setSavedKeys(keys);
-        localStorage.setItem("saved_grant_keys", JSON.stringify(Array.from(keys)));
-      } catch (error) {
-        console.error("Failed to load saved grants:", error);
-        // Fallback to localStorage if backend fails
-        const raw = localStorage.getItem("saved_grant_keys");
-        if (raw) setSavedKeys(new Set(JSON.parse(raw)));
+        // Load saved keys from localStorage
+        const savedKeysRaw = localStorage.getItem("saved_grant_keys");
+        if (savedKeysRaw) {
+          const keys = new Set<string>(JSON.parse(savedKeysRaw));
+          setSavedKeys(keys);
+        }
+      } catch (err) {
+        console.error("Error loading saved keys:", err);
       }
     }
     

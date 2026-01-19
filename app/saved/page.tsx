@@ -47,20 +47,49 @@ export default function SavedPage() {
           return;
         }
 
-        const savedGrants = await getSavedGrants(userId);
-        const convertedGrants = savedGrants.map(convertFirebaseToGrant);
+        // Get saved keys from localStorage
+        const savedKeysRaw = localStorage.getItem("saved_grant_keys");
+        if (!savedKeysRaw) {
+          setGrants([]);
+          setLoading(false);
+          return;
+        }
+
+        const savedKeys = new Set(JSON.parse(savedKeysRaw));
         
-        // Deduplicate grants by applicationUrl or id
-        const uniqueGrants = Array.from(
-          new Map(
-            convertedGrants.map(grant => [
-              grant.applicationUrl || grant.id,
-              grant
-            ])
-          ).values()
-        );
+        // Fetch all grants from backend
+        const response = await fetch('http://localhost:8000/api/grants');
+        if (!response.ok) throw new Error('Failed to fetch grants');
         
-        setGrants(uniqueGrants);
+        const allGrants = await response.json();
+        
+        // Filter to only saved grants
+        const savedGrants = (allGrants || []).filter((grantData: any) => {
+          const key = grantData.source_url || grantData.id;
+          return savedKeys.has(key);
+        }).map((grantData: any) => {
+          const profile = grantData.grant_profile || {};
+          const funding = profile.funding || {};
+          const applicationWindow = profile.application_window || {};
+
+          return {
+            id: grantData.id || grantData.source_url || "unknown",
+            title: grantData.title,
+            organization: grantData.agency,
+            description: grantData.about || "",
+            issueAreas: profile.issue_areas || [],
+            scope: profile.scope_tags?.[0] || "",
+            fundingMin: funding.min_amount_sgd || 0,
+            fundingMax: funding.cap_amount_sgd || 0,
+            fundingRaw: funding.raw || grantData.funding || "",
+            deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || "2026-12-31",
+            eligibility: profile.eligibility?.requirements || [],
+            kpis: [],
+            applicationUrl: grantData.source_url || "",
+          };
+        });
+        
+        setGrants(savedGrants);
       } catch (err) {
         console.error("Error loading saved grants:", err);
         setError("Failed to load saved grants. Make sure the backend is running.");
