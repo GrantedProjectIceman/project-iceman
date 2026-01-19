@@ -143,24 +143,51 @@ export async function getNPOProfile(userId: string) {
 }
 
 export async function calculateMatches(profile: NPOProfile, limit: number = 20) {
-  // For now, return all grants as matches with a default score
-  // In production, you'd want to calculate actual match scores
   const grants = await fetchGrants();
-  return {
-    matches: grants.slice(0, limit).map((grant, idx) => ({
-      grant_id: grant.firestore_id,
-      grant_name: grant.title,
-      agency: grant.agency,
-      match_score: 75 - (idx * 2),
-      confidence: "medium",
-      component_scores: {},
-      reasoning: "Based on your profile",
-      strengths: [],
-      concerns: [],
-      action_items: [],
-      grant_url: grant.source_url,
-    }))
+
+  const intersectCount = (a: string[] = [], b: string[] = []) => {
+    const setB = new Set(b);
+    return a.filter((x) => setB.has(x)).length;
   };
+
+  const scoreGrant = (g: FirebaseGrant): number => {
+    const gp = g.grant_profile || ({} as any);
+    const areas: string[] = gp.issue_areas || [];
+    const scopes: string[] = gp.scope_tags || [];
+    const funding = gp.funding || {};
+    const window = gp.application_window || {};
+
+    const areaOverlap = intersectCount(profile.issue_areas || [], areas);
+    const areaDenom = Math.max(1, (profile.issue_areas || []).length);
+    const areaScore = areaOverlap / areaDenom; // 0..1
+
+    const scopeOverlap = intersectCount(profile.project_types || [], scopes);
+    const scopeDenom = Math.max(1, (profile.project_types || []).length);
+    const scopeScore = scopeOverlap / scopeDenom; // 0..1
+
+    const cap = Number(funding.cap_amount_sgd || funding.min_amount_sgd || 0);
+    let fundingScore = 0.5; // baseline
+    const minNeed = Number(profile.funding_min || 0);
+    const maxNeed = Number(profile.funding_max || 0);
+    if (cap > 0 && (minNeed > 0 || maxNeed > 0)) {
+      if (cap >= minNeed && (maxNeed === 0 || cap <= maxNeed)) fundingScore = 1.0;
+      else if (cap >= minNeed && maxNeed > 0 && cap > maxNeed) fundingScore = 0.8;
+      else if (cap < minNeed) fundingScore = 0.3;
+    }
+
+    const windowScore = window.is_open_all_year ? 1.0 : 0.6;
+
+    // Weighted components → 0..100
+    const total = areaScore * 40 + scopeScore * 25 + fundingScore * 25 + windowScore * 10;
+    return Math.max(0, Math.min(100, total));
+  };
+
+  const ranked = grants
+    .map((g) => ({ grant: g, match_score: scoreGrant(g) }))
+    .sort((a, b) => b.match_score - a.match_score)
+    .slice(0, limit);
+
+  return { matches: ranked };
 }
 
 export async function getRecommendations(userId: string, limit: number = 20) {

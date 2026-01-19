@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import GrantCard from "../components/GrantCard";
 import BottomNav from "../components/BottomNav";
-import { saveSwipe } from "../lib/api";
+import { saveSwipe, getNPOProfile, calculateMatches } from "../lib/api";
 import { Grant } from "../lib/types";
 
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
@@ -124,10 +124,17 @@ export default function MatchPage() {
         localStorage.setItem("saved_grant_keys", JSON.stringify(Array.from(savedKeys)));
         setSavedCount(savedKeys.size);
 
-        const { fetchGrants } = await import("../lib/api");
-        const grantsData = await fetchGrants();
+        // Load profile and calculate matches
+        const profile = await getNPOProfile(storedUserId);
+        if (!profile) {
+          setError("No profile found. Please complete onboarding first.");
+          return;
+        }
 
-        const mapGrant = (grantData: any): Grant => {
+        const { matches } = await calculateMatches(profile, 50);
+
+        const mapMatch = (m: any): Grant => {
+          const grantData = m.grant;
           const profile = grantData.grant_profile || {};
           const funding = profile.funding || {};
           const applicationWindow = profile.application_window || {};
@@ -142,19 +149,19 @@ export default function MatchPage() {
             fundingMin: funding.min_amount_sgd || 0,
             fundingMax: funding.cap_amount_sgd || 0,
             fundingRaw: funding.raw || grantData.funding || "",
-            deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || "2026-12-31",
+            deadline: applicationWindow.end_date || applicationWindow.dates?.[0] || "No deadline",
             eligibility: profile.eligibility?.requirements || [],
             kpis: [],
             applicationUrl: grantData.source_url || "",
-            matchScore: 75,
+            matchScore: Math.round(m.match_score),
             confidence: "medium",
-            reasoning: "Based on your profile",
-            strengths: ["Available grant opportunity"],
-            concerns: ["Complete your profile for better matching"],
+            reasoning: "Profile-based recommendation",
+            strengths: [],
+            concerns: [],
           };
         };
 
-        const allMatchedGrants: Grant[] = (grantsData || []).slice(0, 50).map(mapGrant);
+        const allMatchedGrants: Grant[] = (matches || []).map(mapMatch);
 
         // Filter out already saved grants
         const unseenGrants = allMatchedGrants.filter(grant => {
