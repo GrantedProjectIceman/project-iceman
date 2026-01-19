@@ -240,11 +240,17 @@ export async function getSavedGrants(userId: string): Promise<FirebaseGrant[]> {
     const swipesRef = collection(db, "swipes");
     const q = query(swipesRef, where("user_id", "==", userId), where("action", "==", "like"));
     const snapshot = await getDocs(q);
-    
-    const likedGrantIds = snapshot.docs.map(doc => doc.data().grant_id);
-    
+
+    // Allow matching by firestore_id, id, or source_url to cover legacy saves
+    const likedGrantIds = new Set(
+      snapshot.docs.map(doc => String(doc.data().grant_id || "")).filter(Boolean)
+    );
+
     const grants = await fetchGrants();
-    return grants.filter(grant => likedGrantIds.includes(grant.firestore_id));
+    return grants.filter((grant) => {
+      const candidates = [grant.firestore_id, grant.id, grant.source_url].map((v) => String(v || ""));
+      return candidates.some((c) => likedGrantIds.has(c));
+    });
   } catch (error) {
     console.error('Error fetching saved grants:', error);
     throw error;

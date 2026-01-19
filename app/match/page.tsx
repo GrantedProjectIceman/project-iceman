@@ -183,7 +183,7 @@ export default function MatchPage() {
     if (uid) {
       try {
         const action = direction === "right" ? "like" : "dislike";
-        const grantId = current.applicationUrl || current.id || "";
+        const grantId = current.id || current.applicationUrl || "";
         await saveSwipe(uid, grantId, action, current.matchScore || 0);
 
         if (direction === "right") {
