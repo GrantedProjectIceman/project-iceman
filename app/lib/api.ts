@@ -223,3 +223,5 @@ export async function getSavedGrants(userId: string): Promise<FirebaseGrant[]> {
     console.error('Error fetching saved grants:', error);
     throw error;
   }
+}
+
