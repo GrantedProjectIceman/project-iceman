@@ -36,7 +36,7 @@ Link: [https://project-iceman-wheat.vercel.app/](https://project-iceman-dun.verc
 **Backend & Database:**
 
 * Firebase – Realtime database and user authentication  
-* Playwright  
+* Playwright – Data Scraping
 * Beautiful Soup
 
 **AI & Machine Learning:**
